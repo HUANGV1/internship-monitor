@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel controls">
+  <div class="scan-status">
+    {% if latest_scan %}
+      <p>
+        Last scan:
+        <strong>{{ latest_scan["status"] }}</strong>
+        {% if latest_scan["finished_at"] %}
+          at {{ latest_scan["finished_at"][:19].replace("T", " ") }} UTC
+        {% endif %}
+        {% if latest_scan["jobs_found"] is not none %}
+          · {{ latest_scan["jobs_found"] }} found
+          {% if latest_scan["new_jobs"] %}
+            · {{ latest_scan["new_jobs"] }} new
+          {% endif %}
+        {% endif %}
+      </p>
+      {% if latest_scan["message"] and latest_scan["status"] == "error" %}
+        <p class="error">{{ latest_scan["message"] }}</p>
+      {% endif %}
+    {% else %}
+      <p>No scans yet. The first scan starts when the app boots.</p>
+    {% endif %}
+  </div>
+
+  <form action="/check-now" method="post" class="inline-form">
+    <button type="submit" class="btn primary">Check now</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Search URL</h2>
+  <form action="/settings/search-url" method="post" class="stack-form">
+    <input type="url" name="search_url" value="{{ search_url }}" required>
+    <button type="submit" class="btn">Save search URL</button>
+  </form>
+</section>
+
+{% if jobs %}
+<form action="/mark-reviewed" method="post">
+  <section class="panel">
+    <div class="panel-header">
+      <h2>{{ jobs|length }} new posting{% if jobs|length != 1 %}s{% endif %}</h2>
+      <button type="submit" class="btn">Mark selected reviewed</button>
+    </div>
+
+    <div class="job-list">
+      {% for job in jobs %}
+      <article class="job-card">
+        <label class="job-select">
+          <input type="checkbox" name="urls" value="{{ job.url }}">
+        </label>
+        <div class="job-body">
+          <div class="job-title-row">
+            <h3>{{ job.title }}</h3>
+            <div class="age-badges">
+              {% if job.board_posted_display %}
+                <span class="badge">Posted {{ job.board_posted_display }}</span>
+              {% endif %}
+              <span class="badge muted">Found {{ job.first_seen_display }}</span>
+            </div>
+          </div>
+          <p class="meta">
+            {% if job.company %}{{ job.company }}{% endif %}
+            {% if job.location %} · {{ job.location }}{% endif %}
+            {% if job.workplace %} · {{ job.workplace }}{% endif %}
+            {% if job.salary %} · {{ job.salary }}{% endif %}
+          </p>
+          <a href="{{ job.url }}" target="_blank" rel="noopener noreferrer" class="job-link">Open posting</a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</form>
+{% else %}
+<section class="panel empty-state">
+  <h2>No new postings</h2>
+  <p>Everything currently tracked has been reviewed, or the latest scan has not found anything yet.</p>
+</section>
+{% endif %}
+{% endblock %}

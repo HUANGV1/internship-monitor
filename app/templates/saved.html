@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel controls">
+  <div class="scan-status">
+    {% if latest_scan %}
+      <p>
+        Last scan:
+        <strong>{{ latest_scan["status"] }}</strong>
+        {% if latest_scan["finished_at"] %}
+          at {{ latest_scan["finished_at"][:19].replace("T", " ") }} UTC
+        {% endif %}
+      </p>
+    {% endif %}
+  </div>
+  <form action="/check-now" method="post" class="inline-form">
+    <button type="submit" class="btn primary">Check now</button>
+  </form>
+</section>
+
+{% if jobs %}
+<section class="panel">
+  <h2>{{ jobs|length }} saved posting{% if jobs|length != 1 %}s{% endif %}</h2>
+  <div class="job-list">
+    {% for job in jobs %}
+    <article class="job-card saved">
+      <div class="job-body">
+        <div class="job-title-row">
+          <h3>{{ job.title }}</h3>
+          <div class="age-badges">
+            {% if job.board_posted_display %}
+              <span class="badge">Posted {{ job.board_posted_display }}</span>
+            {% endif %}
+            <span class="badge muted">Found {{ job.first_seen_display }}</span>
+          </div>
+        </div>
+        <p class="meta">
+          {% if job.company %}{{ job.company }}{% endif %}
+          {% if job.location %} · {{ job.location }}{% endif %}
+          {% if job.workplace %} · {{ job.workplace }}{% endif %}
+          {% if job.salary %} · {{ job.salary }}{% endif %}
+        </p>
+        <a href="{{ job.url }}" target="_blank" rel="noopener noreferrer" class="job-link">Open posting</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<section class="panel empty-state">
+  <h2>No saved postings yet</h2>
+  <p>Run a scan from the New page to start tracking internships.</p>
+</section>
+{% endif %}
+{% endblock %}

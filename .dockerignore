@@ -1,0 +1,9 @@
+.git
+.gitignore
+data
+.venv
+venv
+__pycache__
+.pytest_cache
+*.md
+recorded_search.py

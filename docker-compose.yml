@@ -1,0 +1,15 @@
+services:
+  monitor:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    environment:
+      DATA_DIR: /data
+      DATABASE_PATH: /data/internship-monitor.db
+      BROWSER_PROFILE_DIR: /data/browser-profile
+      SEARCH_URL: "https://hiringcafe.com/?searchState=%7B%22searchQuery%22%3A%22software+engineering+intern%22%2C%22dateFetchedPastNDays%22%3A2%7D"
+      SCAN_INTERVAL_MINUTES: "60"
+      PLAYWRIGHT_HEADLESS: "true"
+    restart: unless-stopped

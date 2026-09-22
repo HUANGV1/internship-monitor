@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel controls">
+  <div class="scan-status">
+    <p>Checks run every {{ scan_interval_minutes }} minutes while the app is up, plus once at startup.</p>
+  </div>
+  <form action="/check-now" method="post" class="inline-form">
+    <input type="hidden" name="next" value="/runs">
+    <button type="submit" class="btn primary">Check now</button>
+  </form>
+</section>
+
+{% if scans %}
+<section class="panel">
+  <h2>{{ scans|length }} recent run{% if scans|length != 1 %}s{% endif %}</h2>
+  <div class="table-wrap">
+    <table class="runs-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Trigger</th>
+          <th>Status</th>
+          <th>Started</th>
+          <th>Finished</th>
+          <th>Duration</th>
+          <th>Found</th>
+          <th>New</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for scan in scans %}
+        <tr>
+          <td>{{ scan.id }}</td>
+          <td>{{ scan.trigger }}</td>
+          <td><span class="status status-{{ scan.status }}">{{ scan.status }}</span></td>
+          <td>{{ scan.started_at or "—" }}</td>
+          <td>{{ scan.finished_at or "still running" }}</td>
+          <td>{{ scan.duration or "—" }}</td>
+          <td>{{ scan.jobs_found if scan.jobs_found is not none else "—" }}</td>
+          <td>{{ scan.new_jobs if scan.new_jobs is not none else "—" }}</td>
+        </tr>
+        {% if scan.message %}
+        <tr class="run-message">
+          <td colspan="8">{{ scan.message }}</td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<section class="panel empty-state">
+  <h2>No runs yet</h2>
+  <p>A scan starts when the app boots. Use Check now to record one immediately.</p>
+</section>
+{% endif %}
+{% endblock %}
