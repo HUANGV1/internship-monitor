@@ -41,6 +41,7 @@ def init_db() -> None:
                 location TEXT,
                 salary TEXT,
                 workplace TEXT,
+                source TEXT,
                 board_posted_label TEXT,
                 board_posted_at TEXT,
                 first_seen_at TEXT NOT NULL,
@@ -65,6 +66,9 @@ def init_db() -> None:
         columns = {row[1] for row in conn.execute("PRAGMA table_info(scans)")}
         if "trigger" not in columns:
             conn.execute("ALTER TABLE scans ADD COLUMN trigger TEXT")
+        job_columns = {row[1] for row in conn.execute("PRAGMA table_info(jobs)")}
+        if "source" not in job_columns:
+            conn.execute("ALTER TABLE jobs ADD COLUMN source TEXT")
         conn.execute(
             "INSERT OR IGNORE INTO settings (key, value) VALUES ('search_url', ?)",
             (DEFAULT_SEARCH_URL,),
@@ -136,7 +140,7 @@ def upsert_jobs(jobs: list[dict[str, Any]]) -> int:
                     """
                     UPDATE jobs
                     SET title = ?, company = ?, location = ?, salary = ?, workplace = ?,
-                        last_seen_at = ?
+                        source = COALESCE(?, source), last_seen_at = ?
                     WHERE url = ?
                     """,
                     (
@@ -145,6 +149,7 @@ def upsert_jobs(jobs: list[dict[str, Any]]) -> int:
                         job.get("location"),
                         job.get("salary"),
                         job.get("workplace"),
+                        job.get("source"),
                         now,
                         job["url"],
                     ),
@@ -154,10 +159,10 @@ def upsert_jobs(jobs: list[dict[str, Any]]) -> int:
                 conn.execute(
                     """
                     INSERT INTO jobs (
-                        url, title, company, location, salary, workplace,
+                        url, title, company, location, salary, workplace, source,
                         board_posted_label, board_posted_at,
                         first_seen_at, last_seen_at, reviewed_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
                     """,
                     (
                         job["url"],
@@ -166,6 +171,7 @@ def upsert_jobs(jobs: list[dict[str, Any]]) -> int:
                         job.get("location"),
                         job.get("salary"),
                         job.get("workplace"),
+                        job.get("source"),
                         job.get("board_posted_label"),
                         board_posted_at,
                         now,

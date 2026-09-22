@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app.config import SCAN_INTERVAL_MINUTES
+from app.config import JOB_SOURCE, SCAN_INTERVAL_MINUTES, SIMPLIFY_LISTINGS_URL
 from app.db import (
     get_latest_scan,
     get_new_jobs,
@@ -41,6 +41,7 @@ def _serialize_job(row) -> dict:
         "location": row["location"],
         "salary": row["salary"],
         "workplace": row["workplace"],
+        "source": row["source"] if "source" in row.keys() else None,
         "board_posted_label": row["board_posted_label"],
         "board_posted_display": board_posted_display,
         "first_seen_display": first_seen_display,
@@ -126,6 +127,8 @@ async def new_jobs_page(request: Request):
             "jobs": jobs,
             "latest_scan": latest_scan,
             "search_url": get_search_url(),
+            "job_source": JOB_SOURCE,
+            "simplify_url": SIMPLIFY_LISTINGS_URL,
             "page_title": "New internships",
         },
     )
@@ -142,6 +145,7 @@ async def saved_jobs_page(request: Request):
             "jobs": jobs,
             "latest_scan": latest_scan,
             "search_url": get_search_url(),
+            "job_source": JOB_SOURCE,
             "page_title": "Saved internships",
         },
     )

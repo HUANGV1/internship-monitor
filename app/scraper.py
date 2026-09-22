@@ -7,9 +7,15 @@ from typing import Any
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from playwright.async_api import async_playwright
 
-from app.config import BROWSER_PROFILE_DIR, PLAYWRIGHT_HEADLESS
+from app.config import (
+    BROWSER_PROFILE_DIR,
+    ENABLE_HIRING_CAFE,
+    JOB_SOURCE,
+    PLAYWRIGHT_HEADLESS,
+)
 from app.db import finish_scan, get_search_url, start_scan, upsert_jobs
 from app.locators import load_codegen_locators
+from app.sources.simplify import fetch_simplify_jobs
 from app.timeparse import parse_relative_age
 
 logger = logging.getLogger(__name__)
@@ -108,19 +114,19 @@ async def run_scan(*, trigger: str = "scheduled") -> dict[str, Any]:
 
     async with _scan_lock:
         scan_id = start_scan(trigger)
-        search_url = get_search_url()
-        locators = load_codegen_locators()
-
         try:
-            jobs = await _scrape_search(search_url, locators)
+            jobs = await _collect_jobs()
             enriched = _enrich_jobs(jobs)
             new_jobs = upsert_jobs(enriched)
+            source_label = JOB_SOURCE
+            if ENABLE_HIRING_CAFE:
+                source_label = f"{JOB_SOURCE}+hiring_cafe"
             finish_scan(
                 scan_id,
                 status="success",
                 jobs_found=len(enriched),
                 new_jobs=new_jobs,
-                message=f"Scan triggered by {trigger}",
+                message=f"Scan triggered by {trigger} via {source_label}",
             )
             return {
                 "status": "success",
@@ -136,6 +142,35 @@ async def run_scan(*, trigger: str = "scheduled") -> dict[str, Any]:
                 "message": str(exc),
                 "scan_id": scan_id,
             }
+
+
+async def _collect_jobs() -> list[dict[str, Any]]:
+    jobs: list[dict[str, Any]] = []
+
+    if JOB_SOURCE == "simplify" or JOB_SOURCE == "all":
+        jobs.extend(await asyncio.to_thread(fetch_simplify_jobs))
+
+    if ENABLE_HIRING_CAFE or JOB_SOURCE == "hiring_cafe":
+        search_url = get_search_url()
+        locators = load_codegen_locators()
+        hiring_jobs = await _scrape_search(search_url, locators)
+        for job in hiring_jobs:
+            job.setdefault("source", "hiring_cafe")
+        jobs.extend(hiring_jobs)
+
+    if not jobs and JOB_SOURCE not in {"simplify", "hiring_cafe", "all"}:
+        raise RuntimeError(f"Unknown JOB_SOURCE={JOB_SOURCE!r}. Use simplify or hiring_cafe.")
+
+    # Deduplicate by URL if multiple sources overlap.
+    seen: set[str] = set()
+    unique: list[dict[str, Any]] = []
+    for job in jobs:
+        url = job.get("url")
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        unique.append(job)
+    return unique
 
 
 async def _scrape_search(search_url: str, locators: dict[str, str]) -> list[dict[str, Any]]:
@@ -247,11 +282,14 @@ def _enrich_jobs(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     enriched: list[dict[str, Any]] = []
     for job in jobs:
         label = job.get("board_posted_label")
-        posted_at = parse_relative_age(label)
+        posted_at = job.get("board_posted_at")
+        if not posted_at:
+            parsed = parse_relative_age(label)
+            posted_at = parsed.isoformat() if parsed else None
         enriched.append(
             {
                 **job,
-                "board_posted_at": posted_at.isoformat() if posted_at else None,
+                "board_posted_at": posted_at,
             }
         )
     return enriched

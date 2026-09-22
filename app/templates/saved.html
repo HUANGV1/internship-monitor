@@ -35,6 +35,7 @@
           </div>
         </div>
         <p class="meta">
+          {% if job.source %}<span class="badge muted">{{ job.source }}</span> · {% endif %}
           {% if job.company %}{{ job.company }}{% endif %}
           {% if job.location %} · {{ job.location }}{% endif %}
           {% if job.workplace %} · {{ job.workplace }}{% endif %}

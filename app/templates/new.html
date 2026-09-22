@@ -31,11 +31,19 @@
 </section>
 
 <section class="panel">
-  <h2>Search URL</h2>
+  <h2>Job source</h2>
+  <p class="meta">
+    Currently scanning <strong>{{ job_source }}</strong>
+    {% if job_source == "simplify" %}
+      (SimplifyJobs Summer 2027 software intern listings for US/Canada via public GitHub JSON — no Cloudflare).
+    {% endif %}
+  </p>
+  {% if job_source == "hiring_cafe" %}
   <form action="/settings/search-url" method="post" class="stack-form">
     <input type="url" name="search_url" value="{{ search_url }}" required>
     <button type="submit" class="btn">Save search URL</button>
   </form>
+  {% endif %}
 </section>
 
 {% if jobs %}
@@ -63,6 +71,7 @@
             </div>
           </div>
           <p class="meta">
+            {% if job.source %}<span class="badge muted">{{ job.source }}</span> · {% endif %}
             {% if job.company %}{{ job.company }}{% endif %}
             {% if job.location %} · {{ job.location }}{% endif %}
             {% if job.workplace %} · {{ job.workplace }}{% endif %}

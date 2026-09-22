@@ -15,3 +15,11 @@ DEFAULT_SEARCH_URL = (
 SEARCH_URL = os.getenv("SEARCH_URL", DEFAULT_SEARCH_URL)
 SCAN_INTERVAL_MINUTES = int(os.getenv("SCAN_INTERVAL_MINUTES", "60"))
 PLAYWRIGHT_HEADLESS = os.getenv("PLAYWRIGHT_HEADLESS", "true").lower() in {"1", "true", "yes"}
+
+# Default MVP source: SimplifyJobs GitHub listings (no Cloudflare / no browser).
+JOB_SOURCE = os.getenv("JOB_SOURCE", "simplify").strip().lower()
+SIMPLIFY_LISTINGS_URL = os.getenv(
+    "SIMPLIFY_LISTINGS_URL",
+    "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
+)
+ENABLE_HIRING_CAFE = os.getenv("ENABLE_HIRING_CAFE", "false").lower() in {"1", "true", "yes"}
